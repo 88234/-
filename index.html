@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>课外智辅轻航 - 课外事务自动化应用</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">方向三 · AI 助力课外全场景减负增效</p>
+        <h1>课外智辅轻航</h1>
+        <p class="hero-copy">先导入真实学情，再由数据驱动备课、命题、沟通和归档，把教师课外事务变成“学情诊断、对策建议、教师定稿、应用记录、成效追踪”的完整工作流。</p>
+      </div>
+      <div class="hero-actions">
+        <button id="loadDemoBtn" class="primary-btn hero-main" type="button">载入完整演示样例</button>
+        <button id="runPipelineBtn" class="secondary-btn" type="button">基于学情生成五舱对策</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="data-card" aria-label="学情数据自动诊断">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">第一步 · 学情分析</p>
+            <h2>第一步：学情数据导入与干预建议</h2>
+          </div>
+          <div class="evidence-actions">
+            <button id="analyzeDataBtn" class="secondary-btn" type="button">分析学情数据</button>
+            <button id="sampleDataBtn" class="secondary-btn" type="button">填入样例数据</button>
+          </div>
+        </div>
+        <div class="learning-layout redesigned">
+          <section class="learning-card import-card">
+            <div class="learning-card-title">
+              <span class="step-pill">1</span>
+              <div>
+                <h3>数据入口</h3>
+                <p>先导入模板或填写班级基本信息，后续任务都从这里出发。</p>
+              </div>
+            </div>
+            <div class="import-box">
+              <label>
+                直接导入 Excel 模板
+                <input id="xlsxFile" type="file" accept=".xlsx">
+              </label>
+              <button id="importXlsxBtn" class="secondary-btn" type="button">读取 xlsx 并填入下方数据</button>
+              <small>支持你提供的“学情分析.xlsx”模板；导入后姓名会自动脱敏为学生编号。</small>
+            </div>
+            <div class="class-context-grid">
+              <label>
+                班级总人数
+                <input id="classTotal" type="number" min="1" value="">
+              </label>
+              <label>
+                本次纳入分析人数
+                <input id="analysisCount" type="number" min="1" value="">
+              </label>
+            </div>
+            <label>
+              班级总体画像
+              <textarea id="classPortrait" rows="3" placeholder="例如：班级整体数字工具兴趣较高，表达差异明显，少数学生自我管理能力偏弱，适合采用分层任务和同伴互助。"></textarea>
+            </label>
+            <label class="student-data-inline">
+              学生脱敏数据
+              <textarea id="studentData" rows="5" placeholder="格式：学生编号,年级,性别,家庭情况,家庭年收入,近30天课堂出勤,近30天心理咨询次数,自述心理情况,近30天食堂消费,近30天违纪情况,学生干部任职,其他"></textarea>
+            </label>
+          </section>
+
+          <section class="learning-card result-card">
+            <div class="learning-card-title">
+              <span class="step-pill">2</span>
+              <div>
+                <h3>分析结果与干预对策</h3>
+                <p>形成班级画像、关注分层和可执行干预路径。</p>
+              </div>
+            </div>
+            <div id="analyticsKpis" class="analytics-kpis"></div>
+            <div id="analyticsSummary" class="analytics-summary">先导入或填写学情数据，点击“分析学情数据”后，再生成后续工作舱任务。</div>
+            <div id="heatmap" class="heatmap"></div>
+            <div id="interventionPlan" class="intervention-plan"></div>
+          </section>
+
+        </div>
+      </section>
+
+      <section class="dashboard" aria-label="减负增效仪表盘">
+        <article class="metric-card">
+          <span>预计节约总时长</span>
+          <strong id="savedHours">0.0h</strong>
+          <small>由原始耗时与 AI 辅助后耗时自动计算</small>
+        </article>
+        <article class="metric-card">
+          <span>应用记录</span>
+          <strong id="taskCount">0</strong>
+          <small>完成复核并确认采用后才保存为记录</small>
+        </article>
+        <article class="metric-card">
+          <span>重点关注比例</span>
+          <strong id="improvementRate">0%</strong>
+          <small>由出勤、心理、家庭、消费、违纪等综合画像估算</small>
+        </article>
+        <article class="metric-card">
+          <span>申报准备度</span>
+          <strong id="maturityScore">0</strong>
+          <small>根据已完成材料提示参赛准备进度和补强方向</small>
+        </article>
+      </section>
+
+      <section class="rubric-card" aria-label="申报材料自查与补强清单">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">参赛材料准备</p>
+            <h2>申报材料查缺补漏清单</h2>
+          </div>
+          <p>用于本项目申报材料准备：根据学情导入、对策生成、教师复核、应用记录和导出情况，梳理已完成内容、发现材料缺口，并提示下一步优先补哪里。</p>
+        </div>
+        <div id="rubricGrid" class="rubric-grid"></div>
+      </section>
+
+      <section class="workflow-card" aria-label="自动化工作流">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">自动化流程</p>
+            <h2>学情诊断 → 生成对策建议 → 教师定稿 → 保存记录 → 成效追踪</h2>
+          </div>
+          <p id="workflowHint">当前：请先导入或填写学生情况，完成学情分析后再生成后续任务。</p>
+        </div>
+        <div class="flow">
+          <div class="flow-step" data-step="1">1. 导入学情数据</div>
+          <div class="flow-line"></div>
+          <div class="flow-step" data-step="2">2. 基于学情生成对策</div>
+          <div class="flow-line"></div>
+          <div class="flow-step" data-step="3">3. 教师定稿复核</div>
+          <div class="flow-line"></div>
+          <div class="flow-step" data-step="4">4. 确认保存记录</div>
+          <div class="flow-line"></div>
+          <div class="flow-step" data-step="5">5. 导出过程材料</div>
+        </div>
+        <div id="moduleChain" class="module-chain" aria-label="模块联动链"></div>
+      </section>
+
+      <section class="workspace">
+        <aside class="module-panel" aria-label="五个工作舱">
+          <div class="panel-title">
+            <span>五个工作舱</span>
+            <small>选择场景生成材料</small>
+          </div>
+          <div class="module-list" id="moduleList"></div>
+        </aside>
+
+        <section class="generator-panel" aria-label="应用生成器">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow" id="activeModuleType">备课资源舱</p>
+              <h2 id="activeModuleTitle">生成课前任务单与备课资源</h2>
+            </div>
+            <span id="activeModuleBadge" class="badge">等待学情分析</span>
+          </div>
+
+          <form id="taskForm" class="task-form">
+            <div class="inline-fields">
+              <label>
+                学段/年级
+                <input id="grade" name="grade" value="高职一年级" autocomplete="off">
+              </label>
+              <label>
+                学科/课程
+                <input id="subject" name="subject" value="请填写课程名称" autocomplete="off">
+              </label>
+            </div>
+            <label>
+              主题/任务
+              <input id="topic" name="topic" value="请填写课外任务主题" autocomplete="off">
+            </label>
+            <label>
+              班级/学生情况
+              <textarea id="studentProfile" name="studentProfile" rows="4">完成第一步学情分析后，系统会自动把班级画像、关注分层和主要风险写入这里。</textarea>
+            </label>
+            <label>
+              本次任务目标
+              <textarea id="goal" name="goal" rows="4">减少教师课外资料整理、作业反馈、学情分析和沟通归档时间，形成可直接用于教学、沟通或申报证据的规范材料。</textarea>
+            </label>
+            <div class="inline-fields">
+              <label>
+                原始耗时，分钟
+                <input id="originalMinutes" name="originalMinutes" type="number" min="5" max="360" value="90">
+              </label>
+              <label>
+                AI 辅助后耗时，分钟
+                <input id="assistedMinutes" name="assistedMinutes" type="number" min="3" max="240" value="28">
+              </label>
+            </div>
+            <div class="form-actions">
+              <button id="generateModuleBtn" class="primary-btn" type="submit">生成本舱对策建议</button>
+              <button id="clearBtn" class="secondary-btn" type="button">清空演示记录</button>
+            </div>
+            <p id="generationGateHint" class="gate-hint">请先完成第一步学情分析，再生成后续任务。</p>
+          </form>
+        </section>
+      </section>
+
+      <section class="results-grid">
+        <article class="output-card">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">成果工作台</p>
+              <h2>对策建议 → 教师定稿</h2>
+            </div>
+            <div class="draft-actions">
+              <button id="copyOutputBtn" class="tiny-btn" type="button">复制当前成果</button>
+              <button id="saveDraftBtn" class="tiny-btn primary-tiny" type="button">确认采用并保存记录</button>
+            </div>
+          </div>
+          <div class="draft-guide" aria-label="成果工作台使用说明与对策建议模块">
+            <article class="draft-guide-item">
+              <span>使用说明</span>
+              <p>上方说明只用于指导使用，不进入成果正文。教师需要核查事实、脱敏信息、调整语气和难度，再形成可采用的教师定稿。</p>
+            </article>
+            <article class="draft-guide-item strategy">
+              <span>对策建议模块</span>
+              <p>下方成果正文只生成对策建议，不再混入使用说明；内容会结合课程主题、学情结果、分层支持、沟通协同和跟踪指标展开。</p>
+            </article>
+          </div>
+          <div id="output" class="output-box empty">请先在第一步完成学情数据导入与分析，再选择工作舱生成对策建议。右侧完成教师复核后，保存为教师定稿与应用记录。</div>
+        </article>
+
+        <article class="output-card">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">教师复核</p>
+              <h2>教师复核签核</h2>
+            </div>
+            <span id="reviewStatusBadge" class="badge safe">待复核</span>
+          </div>
+          <ul id="reviewList" class="review-list">
+            <li>等待生成后自动给出审核项。</li>
+          </ul>
+          <div class="review-actions">
+            <button id="quickApproveBtn" class="tiny-btn primary-tiny" type="button">一键常规复核通过</button>
+            <button id="returnDraftBtn" class="tiny-btn" type="button">退回修改</button>
+            <button id="resetReviewBtn" class="tiny-btn" type="button">重置复核</button>
+          </div>
+          <div class="signoff-box" aria-label="教师复核签核">
+            <label class="check-line"><input id="checkFact" type="checkbox">事实与课程要求已核查</label>
+            <label class="check-line"><input id="checkPrivacy" type="checkbox">学生隐私已脱敏</label>
+            <label class="check-line"><input id="checkTone" type="checkbox">表达温和、无标签化</label>
+            <label class="check-line"><input id="checkTeacher" type="checkbox">教师已完成最终判断</label>
+          </div>
+          <label class="review-note-label">
+            教师定稿说明
+            <textarea id="reviewNote" rows="4" placeholder="系统会自动生成定稿说明，也可以补充：改了哪里、为什么改、准备怎样使用。"></textarea>
+          </label>
+        </article>
+      </section>
+
+      <section class="evidence-card" aria-label="应用记录与申报材料">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">过程材料</p>
+            <h2>应用记录与申报材料导出</h2>
+          </div>
+          <div class="evidence-actions">
+            <button id="exportMarkdownBtn" class="secondary-btn" type="button">导出应用记录包</button>
+            <button id="exportReportBtn" class="secondary-btn" type="button">导出申报报告定稿</button>
+            <button id="exportJsonBtn" class="secondary-btn" type="button">导出数据</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>工作舱</th>
+                <th>主题</th>
+                <th>节约时间</th>
+                <th>复核状态</th>
+                <th>申报价值</th>
+              </tr>
+            </thead>
+            <tbody id="evidenceRows">
+              <tr><td colspan="6" class="empty-row">暂无应用记录。生成对策建议并完成复核后，可手动保存到这里。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
