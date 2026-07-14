@@ -623,7 +623,8 @@ input:focus, textarea:focus {
 
 #classPortrait,
 #studentData {
-  min-height: 188px;
+  height: 230px;
+  min-height: 230px;
 }
 
 #studentData {
