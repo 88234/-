@@ -621,10 +621,10 @@ input:focus, textarea:focus {
   margin-top: 0;
 }
 
-#classPortrait,
-#studentData {
-  height: 230px;
-  min-height: 230px;
+.import-card textarea#classPortrait,
+.import-card textarea#studentData {
+  height: 230px !important;
+  min-height: 230px !important;
 }
 
 #studentData {
