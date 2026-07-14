@@ -576,9 +576,10 @@ input:focus, textarea:focus {
 .import-card {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(260px, 0.78fr) minmax(220px, 0.46fr) repeat(2, minmax(360px, 1fr));
-  gap: 18px;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(180px, 0.62fr) repeat(2, minmax(0, 1.25fr));
+  gap: 16px;
   align-items: start;
+  min-width: 0;
 }
 
 .result-card {
@@ -596,6 +597,12 @@ input:focus, textarea:focus {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(36, 88, 216, 0.06);
+  min-width: 0;
+}
+
+.import-card > label,
+.import-card .class-context-grid {
+  min-width: 0;
 }
 
 .import-card .learning-card-title {
