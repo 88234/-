@@ -36,7 +36,7 @@ button { cursor: pointer; }
 }
 
 .hero, .workflow-card, .generator-panel, .module-panel, .output-card,
-.evidence-card, .metric-card, .rubric-card, .data-card {
+.evidence-card, .metric-card, .rubric-card, .data-card, .proof-card, .case-card {
   background: var(--card);
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 26px;
@@ -139,6 +139,198 @@ h3 { font-size: 16px; }
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 22px;
+}
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+.proof-card, .case-card {
+  padding: 24px;
+}
+
+.proof-intro {
+  margin: -6px 0 14px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.genai-evidence {
+  display: grid;
+  gap: 12px;
+}
+
+.genai-step {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.genai-step strong {
+  color: var(--primary);
+}
+
+.genai-step p, .genai-step pre {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.genai-step pre {
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(36, 88, 216, 0.07);
+  font-family: inherit;
+}
+
+.effect-tracker {
+  display: grid;
+  gap: 12px;
+}
+
+.effect-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 76px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.62);
+}
+
+.effect-row strong {
+  color: var(--text);
+}
+
+.effect-bar {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dde5f3;
+}
+
+.effect-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--primary));
+}
+
+.effect-row p {
+  grid-column: 2 / -1;
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.case-card {
+  margin-bottom: 22px;
+}
+
+.case-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 18px;
+}
+
+.case-loop {
+  display: grid;
+  gap: 12px;
+}
+
+.case-node {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.62);
+}
+
+.case-node span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  color: #fff;
+  background: var(--primary);
+  font-weight: 800;
+}
+
+.case-node h3 {
+  margin-bottom: 6px;
+  color: var(--primary);
+}
+
+.case-node p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.evidence-checklist {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-item {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.62);
+}
+
+.evidence-item .mark {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--gold);
+  background: rgba(183,119,0,0.12);
+  font-weight: 800;
+}
+
+.evidence-item.done .mark {
+  color: #fff;
+  background: var(--accent);
+}
+
+.evidence-item strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.evidence-item small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.evidence-item em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .metric-card { padding: 20px; }
@@ -576,8 +768,8 @@ input:focus, textarea:focus {
 .import-card {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(180px, 0.62fr) repeat(2, minmax(0, 1.25fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
   align-items: start;
   min-width: 0;
 }
@@ -611,8 +803,14 @@ input:focus, textarea:focus {
 }
 
 .import-card .class-context-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 0;
+  align-self: stretch;
+}
+
+.import-card > label:not(.student-data-inline),
+.student-data-inline {
+  grid-column: span 1;
 }
 
 .import-box .secondary-btn {
@@ -630,8 +828,8 @@ input:focus, textarea:focus {
 
 .import-card textarea#classPortrait,
 .import-card textarea#studentData {
-  height: 230px !important;
-  min-height: 230px !important;
+  height: 240px !important;
+  min-height: 240px !important;
 }
 
 #studentData {
@@ -866,7 +1064,7 @@ td { line-height: 1.5; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (max-width: 1080px) {
-  .dashboard, .rubric-grid { grid-template-columns: repeat(2, 1fr); }
+  .dashboard, .rubric-grid, .proof-grid, .case-layout { grid-template-columns: repeat(2, 1fr); }
   .rubric-checks { grid-template-columns: 1fr; }
   .workspace, .results-grid, .learning-layout { grid-template-columns: 1fr; }
   .import-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -877,6 +1075,8 @@ td { line-height: 1.5; }
 
 @media (max-width: 860px) {
   .hero, .section-heading { flex-direction: column; }
+  .proof-grid, .case-layout { grid-template-columns: 1fr; }
+  .genai-step { grid-template-columns: 1fr; }
   .module-chain { grid-template-columns: 1fr; }
   .chain-item::after { content: ""; }
   .flow { grid-template-columns: 1fr; }
@@ -890,5 +1090,9 @@ td { line-height: 1.5; }
   .evidence-card, .metric-card, .rubric-card, .data-card { border-radius: 20px; }
   .hero { padding: 24px; }
   .dashboard, .rubric-grid, .inline-fields, .class-context-grid, .analytics-kpis, .import-card { grid-template-columns: 1fr; }
+  .effect-row { grid-template-columns: 1fr; }
+  .effect-row p { grid-column: 1; }
+  .evidence-item { grid-template-columns: 26px 1fr; }
+  .evidence-item em { grid-column: 2; }
   .heat-row p { margin-left: 0; }
 }

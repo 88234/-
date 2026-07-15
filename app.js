@@ -276,10 +276,11 @@ function calculateRubricScores() {
   const savedMinutes = context.savedMinutes;
   const signed = context.signed;
   const hasAnalytics = context.hasAnalytics;
+  const hasGenaiTrace = context.hasGenaiTrace;
 
   return {
     value: Math.min(15, 7 + Math.min(4, moduleCoverage) + (state.records.length >= 3 ? 2 : 0) + (hasAnalytics ? 2 : 0)),
-    genai: Math.min(35, 10 + moduleCoverage * 4 + (state.records.length >= 5 ? 4 : 0) + (state.currentDraft ? 1 : 0)),
+    genai: Math.min(35, 8 + moduleCoverage * 4 + (hasGenaiTrace ? 6 : 0) + (state.records.length >= 5 ? 3 : 0) + (state.currentDraft ? 2 : 0)),
     effect: Math.min(30, 6 + Math.min(9, Math.round(savedMinutes / 30)) + (hasAnalytics ? 8 : 0) + Math.min(7, signed)),
     demo: Math.min(20, 6 + moduleCoverage * 2 + (state.records.length >= 5 ? 3 : 0) + (hasAnalytics ? 3 : 0) + (state.exportedOnce ? 1 : 0))
   };
@@ -299,6 +300,7 @@ function getRubricContext() {
   const savedMinutes = state.records.reduce((sum, record) => sum + record.savedMinutes, 0);
   const signed = state.records.filter((record) => record.reviewStatus.includes("已复核")).length;
   const hasAnalytics = Boolean(state.analytics);
+  const hasGenaiTrace = Boolean(state.currentDraft?.aiPrompt || state.records.some((record) => record.aiPrompt));
   const allSavedReviewed = state.records.length > 0 && signed === state.records.length;
 
   return {
@@ -306,6 +308,7 @@ function getRubricContext() {
     savedMinutes,
     signed,
     hasAnalytics,
+    hasGenaiTrace,
     allSavedReviewed,
     hasPipelineRecord,
     recordCount: state.records.length,
@@ -335,13 +338,14 @@ function buildRubricDiagnostics(item) {
     },
     genai: {
       checks: [
+        { label: "有系统提示词和 AI 初稿证据", done: context.hasGenaiTrace },
         { label: "形成“学情→对策→复核→保存”闭环", done: context.recordCount > 0 && context.signed > 0 },
         { label: "覆盖至少 3 个课外工作舱", done: context.moduleCoverage >= 3 },
         { label: "未复核内容不直接进入记录", done: context.allSavedReviewed }
       ],
-      basis: context.recordCount ? recordText : "当前只有页面框架或待生成内容，还没有可证明的 GenAI 流程记录。",
-      gap: context.moduleCoverage >= 3 ? "可以继续补齐五舱之间的连续案例，突出 GenAI 不是单点写作工具。" : "目前工作舱覆盖不足，容易被看成只做了某一个功能点。",
-      action: "按“学情诊断→备课资源→命题作业→沟通协同→资料归档”的顺序，各保存一条经过教师复核的记录。"
+      basis: context.hasGenaiTrace ? `${recordText} 已形成可展示的提示词、系统初稿和教师复核链条。` : "当前只有页面框架或待生成内容，还没有可证明的 GenAI 流程记录。",
+      gap: context.hasGenaiTrace ? "可以继续补齐五舱之间的连续案例，突出 GenAI 不是单点写作工具。" : "缺少“系统如何组织提示词、AI 如何生成初稿、教师如何定稿”的过程证据。",
+      action: context.hasGenaiTrace ? "按“学情诊断→备课资源→命题作业→沟通协同→资料归档”的顺序，各保存一条经过教师复核的记录。" : "先生成一个工作舱对策建议，查看并保存 GenAI 过程证据，再完成教师复核。"
     },
     effect: {
       checks: [
@@ -358,6 +362,7 @@ function buildRubricDiagnostics(item) {
       checks: [
         { label: "五个工作舱均有材料", done: context.moduleCoverage >= workflowOrder.length },
         { label: "已导出申报或过程材料", done: state.exportedOnce },
+        { label: "证据包清单能自动提示缺口", done: true },
         { label: "课程名称和任务主题可替换", done: true },
         { label: "有可复用的数据表和记录包", done: context.recordCount > 0 && context.hasAnalytics }
       ],
@@ -422,6 +427,9 @@ function renderDashboard() {
   $("improvementRate").textContent = `${attentionRate}%`;
   $("maturityScore").textContent = completeness;
   renderRubric();
+  renderGenaiEvidence();
+  renderEffectTracker();
+  renderCaseLoop();
 }
 
 function renderEvidence() {
@@ -440,6 +448,215 @@ function renderEvidence() {
       <td>${record.value}</td>
     </tr>
   `).join("");
+}
+
+function latestRecord() {
+  return state.records[state.records.length - 1] || null;
+}
+
+function htmlEscape(text) {
+  return String(text ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderGenaiEvidence() {
+  const container = $("genaiEvidence");
+  if (!container) return;
+  const badge = $("genaiTraceBadge");
+  const draft = state.currentDraft;
+  const record = latestRecord();
+  const source = draft || record;
+
+  if (!source) {
+    badge.textContent = "待生成";
+    badge.className = "badge warn";
+    container.innerHTML = `
+      <div class="genai-step">
+        <strong>待补强</strong>
+        <p>完成学情分析并生成任一工作舱对策后，这里会自动显示“系统组织给 GenAI 的提示词、AI 初稿、教师复核要求和定稿去向”。</p>
+      </div>
+      <div class="genai-step">
+        <strong>建议动作</strong>
+        <p>先点击“分析学情数据”，再生成本舱对策建议；如果要展示真实 GenAI 使用过程，可复制提示词到通用大模型，再把生成结果粘贴回教师定稿。</p>
+      </div>
+    `;
+    return;
+  }
+
+  const prompt = source.aiPrompt || buildAiPromptEvidence({
+    moduleName: source.moduleName,
+    topic: source.topic,
+    originalMinutes: source.originalMinutes,
+    assistedMinutes: source.assistedMinutes
+  });
+  const reviewed = Boolean(record && record.id === source.id) || source.reviewStatus?.includes("已复核") || signoffReady();
+  badge.textContent = reviewed ? "已形成证据" : "待复核";
+  badge.className = reviewed ? "badge safe" : "badge warn";
+  container.innerHTML = `
+    <div class="genai-step">
+      <strong>1. 任务输入</strong>
+      <p>${htmlEscape(source.moduleName || "当前工作舱")}围绕“${htmlEscape(source.topic || "当前任务")}”生成材料，已接入学情画像、关注分层和任务目标。</p>
+    </div>
+    <div class="genai-step">
+      <strong>2. 提示词</strong>
+      <pre>${htmlEscape(prompt)}</pre>
+    </div>
+    <div class="genai-step">
+      <strong>3. AI 初稿</strong>
+      <p>${draft ? "当前成果工作台中的对策建议即为系统初稿，尚需教师复核后才能保存为应用记录。" : "最近一条应用记录已保存系统初稿和教师定稿说明，可在导出的应用记录包中查看。"}</p>
+    </div>
+    <div class="genai-step">
+      <strong>4. 教师定稿</strong>
+      <p>${reviewed ? "已完成事实核查、隐私脱敏、语气调整和教师最终判断。" : "请完成教师复核签核，补充定稿说明，再保存为应用记录。"}</p>
+    </div>
+  `;
+}
+
+function renderEffectTracker() {
+  const container = $("effectTracker");
+  if (!container) return;
+  const badge = $("effectTraceBadge");
+  if (!state.records.length) {
+    badge.textContent = "待记录";
+    badge.className = "badge warn";
+    container.innerHTML = `
+      <div class="effect-row">
+        <strong>待补证据</strong>
+        <div class="effect-bar"><span class="effect-fill" style="width:18%"></span></div>
+        <small>0 分钟</small>
+        <p>保存记录时填写“原始耗时”和“AI 辅助后耗时”，这里会自动形成应用前后对比。</p>
+      </div>
+      <div class="effect-row">
+        <strong>提质证据</strong>
+        <div class="effect-bar"><span class="effect-fill" style="width:12%"></span></div>
+        <small>待补</small>
+        <p>建议后续补充一周或两周后的出勤、作业完成、谈话反馈变化。</p>
+      </div>
+    `;
+    return;
+  }
+
+  const groups = new Map();
+  state.records.forEach((record) => {
+    const key = record.moduleName;
+    if (!groups.has(key)) groups.set(key, { count: 0, original: 0, assisted: 0, saved: 0 });
+    const item = groups.get(key);
+    item.count += 1;
+    item.original += record.originalMinutes;
+    item.assisted += record.assistedMinutes;
+    item.saved += record.savedMinutes;
+  });
+  const maxSaved = Math.max(...Array.from(groups.values()).map((item) => item.saved), 1);
+  const totalSaved = state.records.reduce((sum, item) => sum + item.savedMinutes, 0);
+  badge.textContent = `已记录 ${state.records.length} 条`;
+  badge.className = "badge safe";
+  container.innerHTML = Array.from(groups.entries()).map(([name, item]) => {
+    const width = Math.max(8, Math.round((item.saved / maxSaved) * 100));
+    const avgOriginal = Math.round(item.original / item.count);
+    const avgAssisted = Math.round(item.assisted / item.count);
+    return `
+      <div class="effect-row">
+        <strong>${htmlEscape(name)}</strong>
+        <div class="effect-bar" aria-label="${htmlEscape(name)} 节约 ${item.saved} 分钟"><span class="effect-fill" style="width:${width}%"></span></div>
+        <small>${item.saved} 分钟</small>
+        <p>${item.count} 条记录；平均原始耗时 ${avgOriginal} 分钟，AI 辅助后 ${avgAssisted} 分钟。质量证据：${qualityEvidenceForModule(name)}</p>
+      </div>
+    `;
+  }).join("") + `
+    <div class="effect-row">
+      <strong>累计</strong>
+      <div class="effect-bar"><span class="effect-fill" style="width:100%"></span></div>
+      <small>${totalSaved} 分钟</small>
+      <p>当前可作为“减负”证据；下一步建议补充后续变化，增强“提质”证据。</p>
+    </div>
+  `;
+}
+
+function qualityEvidenceForModule(moduleName) {
+  if (moduleName.includes("学情")) return "形成关注分层、干预优先级和后续追踪指标。";
+  if (moduleName.includes("备课")) return "备课任务能承接学情画像，输出支架和评价证据。";
+  if (moduleName.includes("作业") || moduleName.includes("命题")) return "作业从统一布置转向分层任务和错因反馈。";
+  if (moduleName.includes("沟通")) return "沟通文本按事实、理解、建议、跟进组织，减少标签化表达。";
+  if (moduleName.includes("归档")) return "零散过程材料沉淀为周报、案例和下一轮诊断依据。";
+  return "形成五舱连续材料，可拆分复核后用于不同课外事务。";
+}
+
+function renderCaseLoop() {
+  const caseBox = $("caseLoop");
+  const checklist = $("evidenceChecklist");
+  if (!caseBox || !checklist) return;
+  const record = latestRecord();
+  const analytics = state.analytics;
+  const focus = analytics ? getFocusStudentSummary(3) : "待导入学情数据后生成。";
+  const saved = state.records.reduce((sum, item) => sum + item.savedMinutes, 0);
+
+  const nodes = [
+    {
+      title: "学情来源",
+      text: analytics
+        ? `已纳入 ${analytics.analysisCount} 名学生脱敏画像，识别高关注 ${analytics.highCount} 人、中关注 ${analytics.mediumCount} 人。重点参考：${focus}`
+        : "尚未完成学情分析。先导入 Excel 或填入样例数据，案例链才有真实起点。"
+    },
+    {
+      title: "AI 辅助",
+      text: record
+        ? `最近一次围绕“${record.topic}”生成 ${record.moduleName}，节约 ${record.savedMinutes} 分钟。`
+        : state.currentDraft
+          ? `已生成 ${state.currentDraft.moduleName} 系统初稿，等待教师复核后保存。`
+          : "尚未生成对策建议。"
+    },
+    {
+      title: "教师定稿",
+      text: record
+        ? `最近记录已保存教师定稿说明：${record.reviewNote.slice(0, 70)}${record.reviewNote.length > 70 ? "……" : ""}`
+        : "完成四项复核后，系统才允许保存为应用记录。"
+    },
+    {
+      title: "成效追踪",
+      text: saved
+        ? `当前累计节约 ${saved} 分钟。建议继续补充一到两周后的出勤、任务完成、谈话反馈变化。`
+        : "尚未形成耗时对比，成效证据仍需补充。"
+    }
+  ];
+
+  caseBox.innerHTML = nodes.map((node, index) => `
+    <article class="case-node">
+      <span>${index + 1}</span>
+      <div>
+        <h3>${node.title}</h3>
+        <p>${htmlEscape(node.text)}</p>
+      </div>
+    </article>
+  `).join("");
+
+  const evidenceItems = buildEvidenceChecklist();
+  checklist.innerHTML = evidenceItems.map((item) => `
+    <article class="evidence-item ${item.done ? "done" : ""}">
+      <span class="mark">${item.done ? "✓" : "!"}</span>
+      <div>
+        <strong>${item.title}</strong>
+        <small>${item.desc}</small>
+      </div>
+      <em>${item.done ? "已具备" : "待补充"}</em>
+    </article>
+  `).join("");
+}
+
+function buildEvidenceChecklist() {
+  const coverage = getRubricContext().moduleCoverage;
+  const saved = state.records.reduce((sum, item) => sum + item.savedMinutes, 0);
+  const hasPrompt = Boolean(state.currentDraft?.aiPrompt || state.records.some((item) => item.aiPrompt));
+  return [
+    { title: "脱敏学情数据", desc: "Excel 模板或手动录入的班级画像、学生编号和关注分层。", done: Boolean(state.analytics) },
+    { title: "GenAI 提示词与初稿", desc: "证明系统不是只填表，而是组织任务背景并生成初稿。", done: hasPrompt },
+    { title: "教师复核定稿", desc: "包含事实核查、隐私脱敏、语气调整和教师判断。", done: state.records.some((item) => item.reviewStatus.includes("已复核")) },
+    { title: "应用前后耗时对比", desc: "用真实分钟数说明重复性事务减少。", done: saved > 0 },
+    { title: "五舱闭环案例", desc: "至少覆盖学情、备课、作业、沟通、归档五个课外场景。", done: coverage >= workflowOrder.length },
+    { title: "后续效果追踪", desc: "补充一到两周后的出勤、作业、谈心或家校反馈变化。", done: state.records.length >= 5 && saved > 0 }
+  ];
 }
 
 function persist() {
@@ -464,6 +681,32 @@ ${data.studentProfile}
 
 本次课外任务目标：
 ${data.goal}`;
+}
+
+function buildAiPromptEvidence(module, data = {}) {
+  const analytics = state.analytics
+    ? `班级总人数 ${state.analytics.classTotal} 人，纳入分析 ${state.analytics.analysisCount} 人；高关注 ${state.analytics.highCount} 人，中关注 ${state.analytics.mediumCount} 人；主要风险：${state.analytics.topRiskText}。`
+    : "尚未接入学情数据。";
+  const moduleName = module.name || module.moduleName || "当前工作舱";
+  const topic = data.topic || module.topic || "当前任务";
+  const subject = data.subject || "当前课程";
+  const grade = data.grade || "当前年级";
+  return `你是一名熟悉教师课外事务减负增效的教育智能助手。
+请基于以下真实背景，生成“${moduleName}”的对策建议初稿。
+
+【学段/年级】${grade}
+【学科/课程】${subject}
+【主题任务】${topic}
+【学情依据】${analytics}
+【班级/学生情况】${data.studentProfile || "使用当前已导入的班级画像与学生脱敏数据。"}
+【任务目标】${data.goal || "减少教师重复性整理、起草、沟通和归档时间，同时提高干预建议的可执行性。"}
+
+输出要求：
+1. 只生成可供教师复核的初稿，不直接作为最终结论。
+2. 必须体现“承接上一环节—本环节产出—流向下一环节”。
+3. 干预建议要包含问题信号、可能原因、教师行动和跟踪指标。
+4. 涉及学生信息使用编号，不出现姓名、联系方式和敏感身份。
+5. 最后给出教师复核重点：事实核查、隐私脱敏、语气适配、课程目标对齐。`;
 }
 
 function getModuleLinkage(moduleId) {
@@ -668,6 +911,7 @@ function generateReviewItems(module, data) {
 }
 
 function showDraft(module, data, artifact) {
+  const aiPrompt = buildAiPromptEvidence(module, data);
   state.currentDraft = {
     moduleId: module.id,
     moduleName: module.name,
@@ -676,6 +920,7 @@ function showDraft(module, data, artifact) {
     assistedMinutes: data.assistedMinutes,
     savedMinutes: Math.max(0, data.originalMinutes - data.assistedMinutes),
     value: module.value,
+    aiPrompt,
     artifact
   };
   state.lastOutput = artifact;
@@ -751,6 +996,7 @@ function saveCurrentDraft() {
     reviewStatus: "已复核并保存",
     reviewNote,
     value: draft.value,
+    aiPrompt: draft.aiPrompt,
     artifact: `${draft.artifact}\n\n【教师定稿说明】\n${reviewNote}`
   });
   persist();
@@ -1340,6 +1586,8 @@ function makeEvidenceMarkdown() {
   const analytics = state.analytics
     ? `班级总人数 ${state.analytics.classTotal}，纳入分析 ${state.analytics.analysisCount}；高关注 ${state.analytics.highCount} 人，中关注 ${state.analytics.mediumCount} 人，重点关注比例 ${state.analytics.attentionRate}%；主要风险：${state.analytics.topRiskText}。`
     : "尚未形成学情分析记录。";
+  const promptEvidence = state.records.filter((item) => item.aiPrompt).slice(-5);
+  const checklist = buildEvidenceChecklist();
   return [
     "# 课外智辅轻航应用记录包",
     "",
@@ -1357,7 +1605,17 @@ function makeEvidenceMarkdown() {
     "|---|---|---|---:|---:|---:|---|---|",
     ...state.records.map((item) => `| ${item.time} | ${item.moduleName} | ${item.topic} | ${item.originalMinutes} | ${item.assistedMinutes} | ${item.savedMinutes} | ${item.reviewStatus} | ${(item.reviewNote || "").replace(/\|/g, "，")} |`),
     "",
-    "## 三、已确认采用材料",
+    "## 三、GenAI 过程证据",
+    "",
+    ...(promptEvidence.length
+      ? promptEvidence.map((item, index) => `### ${index + 1}. ${item.moduleName}提示词\n\n\`\`\`text\n${item.aiPrompt}\n\`\`\`\n`)
+      : ["尚未保存 GenAI 提示词证据。建议先生成对策建议并完成教师复核后保存记录。"]),
+    "",
+    "## 四、证据包清单",
+    "",
+    ...checklist.map((item) => `- ${item.done ? "已具备" : "待补充"}：${item.title}。${item.desc}`),
+    "",
+    "## 五、已确认采用材料",
     "",
     ...state.records.slice(-5).map((item, index) => `### ${index + 1}. ${item.moduleName}\n\n${item.artifact}\n`)
   ].join("\n");

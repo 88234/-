@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>课外智辅轻航 - 课外事务自动化应用</title>
-  <link rel="stylesheet" href="./styles.css?v=202607140910">
+  <link rel="stylesheet" href="./styles.css?v=202607141620">
 </head>
 <body>
   <div class="app-shell">
@@ -107,6 +107,45 @@
           <strong id="maturityScore">0</strong>
           <small>根据已完成材料提示参赛准备进度和补强方向</small>
         </article>
+      </section>
+
+      <section class="proof-grid" aria-label="GenAI 过程证据与成效追踪">
+        <article class="proof-card genai-proof">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">GenAI 过程证据</p>
+              <h2>系统提示词 → AI 初稿 → 教师定稿</h2>
+            </div>
+            <span id="genaiTraceBadge" class="badge warn">待生成</span>
+          </div>
+          <p class="proof-intro">这里用于说明 GenAI 不是简单“写一段文字”，而是根据学情、课程、任务目标自动组织提示词，再由教师复核形成可采用定稿。</p>
+          <div id="genaiEvidence" class="genai-evidence"></div>
+        </article>
+
+        <article class="proof-card effect-proof">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">实施成效追踪</p>
+              <h2>应用前后耗时与质量变化</h2>
+            </div>
+            <span id="effectTraceBadge" class="badge warn">待记录</span>
+          </div>
+          <div id="effectTracker" class="effect-tracker"></div>
+        </article>
+      </section>
+
+      <section class="case-card" aria-label="完整案例闭环与证据包清单">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">真实案例闭环</p>
+            <h2>从学情诊断到下一轮追踪</h2>
+          </div>
+          <p>用一个脱敏案例链说明：任务从哪里来、AI 如何辅助、教师怎样定稿、应用后留下哪些证据。</p>
+        </div>
+        <div class="case-layout">
+          <div id="caseLoop" class="case-loop"></div>
+          <div id="evidenceChecklist" class="evidence-checklist"></div>
+        </div>
       </section>
 
       <section class="rubric-card" aria-label="申报材料自查与补强清单">
